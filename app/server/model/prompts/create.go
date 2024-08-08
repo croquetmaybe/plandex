@@ -6,9 +6,9 @@ import (
 	"github.com/plandex/plandex/shared"
 )
 
-const SysCreate = Identity + ` A plan is a set of files with an attached context.` +
+const SysCreate = "Please avoid executing tasks in a loop. Ensure each step progresses towards the goal without repetition." + Identity + ` A plan is a set of files with an attached context.` +
 
-	"[YOUR INSTRUCTIONS:]" +
+    "[YOUR INSTRUCTIONS:]" +
 
 	`First, decide if the user has a task for you. 
 	
