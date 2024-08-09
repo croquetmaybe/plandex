@@ -593,9 +593,9 @@ func init() {
         },
     }
 
-    OpenRouterClaude3Dot5SonnetGPT4TurboModelPack := ModelPack{
-        Name:        "Claude 3.5 Sonnet + GPT-4 Turbo",
-        Description: "Powerful combo of Claude and GPT-4 Turbo",
+    OpenRouterClaude3Dot5SonnetGPT4oModelPack := ModelPack{
+        Name:        "Claude 3.5 Sonnet + GPT-4o",
+        Description: "Powerful combo of Claude and GPT-4o",
         Planner: PlannerRoleConfig{
             ModelRoleConfig: ModelRoleConfig{
                 Role:            ModelRolePlanner,
@@ -613,9 +613,27 @@ func init() {
         },
         Builder: ModelRoleConfig{
             Role:            ModelRoleBuilder,
-            BaseModelConfig: AvailableModelsByName["gpt-4-turbo"].BaseModelConfig,
+            BaseModelConfig: AvailableModelsByName["anthropic/claude-3.5-sonnet"].BaseModelConfig,
             Temperature:     DefaultConfigByRole[ModelRoleBuilder].Temperature,
             TopP:            DefaultConfigByRole[ModelRoleBuilder].TopP,
+        },
+        Namer: ModelRoleConfig{
+            Role:            ModelRoleName,
+            BaseModelConfig: AvailableModelsByName["gpt-4o-2024-08-06"].BaseModelConfig,
+            Temperature:     DefaultConfigByRole[ModelRoleName].Temperature,
+            TopP:            DefaultConfigByRole[ModelRoleName].TopP,
+        },
+        CommitMsg: ModelRoleConfig{
+            Role:            ModelRoleCommitMsg,
+            BaseModelConfig: AvailableModelsByName["gpt-4o-2024-08-06"].BaseModelConfig,
+            Temperature:     DefaultConfigByRole[ModelRoleCommitMsg].Temperature,
+            TopP:            DefaultConfigByRole[ModelRoleCommitMsg].TopP,
+        },
+        ExecStatus: ModelRoleConfig{
+            Role:            ModelRoleExecStatus,
+            BaseModelConfig: AvailableModelsByName["gpt-4o-2024-08-06"].BaseModelConfig,
+            Temperature:     DefaultConfigByRole[ModelRoleExecStatus].Temperature,
+            TopP:            DefaultConfigByRole[ModelRoleExecStatus].TopP,
         },
     }
         TogetherMixtral8x22BModelPack := ModelPack{
@@ -686,13 +704,69 @@ func init() {
             Temperature:     DefaultConfigByRole[ModelRoleBuilder].Temperature,
             TopP:            DefaultConfigByRole[ModelRoleBuilder].TopP,
         },
-	    Namer: ModelRoleConfig{
+        Namer: ModelRoleConfig{
             Role:            ModelRoleName,
             BaseModelConfig: AvailableModelsByName["gpt-4o-mini"].BaseModelConfig,
             Temperature:     DefaultConfigByRole[ModelRoleName].Temperature,
             TopP:            DefaultConfigByRole[ModelRoleName].TopP,
         },
+        CommitMsg: ModelRoleConfig{
+            Role:            ModelRoleCommitMsg,
+            BaseModelConfig: AvailableModelsByName["gpt-4o-mini"].BaseModelConfig,
+            Temperature:     DefaultConfigByRole[ModelRoleCommitMsg].Temperature,
+            TopP:            DefaultConfigByRole[ModelRoleCommitMsg].TopP,
+        },
+        ExecStatus: ModelRoleConfig{
+            Role:            ModelRoleExecStatus,
+            BaseModelConfig: AvailableModelsByName["gpt-4o-mini"].BaseModelConfig,
+            Temperature:     DefaultConfigByRole[ModelRoleExecStatus].Temperature,
+            TopP:            DefaultConfigByRole[ModelRoleExecStatus].TopP,
+        },
     }
+
+	    GeminiModelPack := ModelPack{
+        Name:        "Gemini Pro 1.5 Experimental",
+        Description: "Google's Gemini Pro 1.5 Eperimental only",
+        Planner: PlannerRoleConfig{
+            ModelRoleConfig: ModelRoleConfig{
+                Role:            ModelRolePlanner,
+                BaseModelConfig: AvailableModelsByName["google/gemini-pro-1.5-exp"].BaseModelConfig,
+                Temperature:     DefaultConfigByRole[ModelRolePlanner].Temperature,
+                TopP:            DefaultConfigByRole[ModelRolePlanner].TopP,
+            },
+            PlannerModelConfig: getPlannerModelConfig("google/gemini-pro-1.5-exp"),
+        },
+        PlanSummary: ModelRoleConfig{
+            Role:            ModelRolePlanSummary,
+            BaseModelConfig: AvailableModelsByName["google/gemini-pro-1.5-exp"].BaseModelConfig,
+            Temperature:     DefaultConfigByRole[ModelRolePlanSummary].Temperature,
+            TopP:            DefaultConfigByRole[ModelRolePlanSummary].TopP,
+        },
+        Builder: ModelRoleConfig{
+            Role:            ModelRoleBuilder,
+            BaseModelConfig: AvailableModelsByName["google/gemini-pro-1.5-exp"].BaseModelConfig,
+            Temperature:     DefaultConfigByRole[ModelRoleBuilder].Temperature,
+            TopP:            DefaultConfigByRole[ModelRoleBuilder].TopP,
+        },
+        Namer: ModelRoleConfig{
+            Role:            ModelRoleName,
+            BaseModelConfig: AvailableModelsByName["google/gemini-pro-1.5-exp"].BaseModelConfig,
+            Temperature:     DefaultConfigByRole[ModelRoleName].Temperature,
+            TopP:            DefaultConfigByRole[ModelRoleName].TopP,
+        },
+        CommitMsg: ModelRoleConfig{
+            Role:            ModelRoleCommitMsg,
+            BaseModelConfig: AvailableModelsByName["google/gemini-pro-1.5-exp"].BaseModelConfig,
+            Temperature:     DefaultConfigByRole[ModelRoleCommitMsg].Temperature,
+            TopP:            DefaultConfigByRole[ModelRoleCommitMsg].TopP,
+        },
+        ExecStatus: ModelRoleConfig{
+            Role:            ModelRoleExecStatus,
+            BaseModelConfig: AvailableModelsByName["google/gemini-pro-1.5-exp"].BaseModelConfig,
+            Temperature:     DefaultConfigByRole[ModelRoleExecStatus].Temperature,
+            TopP:            DefaultConfigByRole[ModelRoleExecStatus].TopP,
+        },
+	}
         Gpt4oMiniModelPack := ModelPack{
         Name:        "GPT-4o Mini",
         Description: "Compact GPT-4o for efficient processing",
@@ -737,14 +811,61 @@ func init() {
         },
     }
 
+	    // New model pack using only "anthropic/claude-3-haiku"
+    Claude3HaikuModelPack := ModelPack{
+        Name:        "Claude 3 Haiku",
+        Description: "Anthropic's Claude 3 Haiku model for all roles",
+        Planner: PlannerRoleConfig{
+            ModelRoleConfig: ModelRoleConfig{
+                Role:            ModelRolePlanner,
+                BaseModelConfig: AvailableModelsByName["anthropic/claude-3-haiku"].BaseModelConfig,
+                Temperature:     DefaultConfigByRole[ModelRolePlanner].Temperature,
+                TopP:            DefaultConfigByRole[ModelRolePlanner].TopP,
+            },
+            PlannerModelConfig: getPlannerModelConfig("anthropic/claude-3-haiku"),
+        },
+        PlanSummary: ModelRoleConfig{
+            Role:            ModelRolePlanSummary,
+            BaseModelConfig: AvailableModelsByName["anthropic/claude-3-haiku"].BaseModelConfig,
+            Temperature:     DefaultConfigByRole[ModelRolePlanSummary].Temperature,
+            TopP:            DefaultConfigByRole[ModelRolePlanSummary].TopP,
+        },
+        Builder: ModelRoleConfig{
+            Role:            ModelRoleBuilder,
+            BaseModelConfig: AvailableModelsByName["anthropic/claude-3-haiku"].BaseModelConfig,
+            Temperature:     DefaultConfigByRole[ModelRoleBuilder].Temperature,
+            TopP:            DefaultConfigByRole[ModelRoleBuilder].TopP,
+        },
+        Namer: ModelRoleConfig{
+            Role:            ModelRoleName,
+            BaseModelConfig: AvailableModelsByName["anthropic/claude-3-haiku"].BaseModelConfig,
+            Temperature:     DefaultConfigByRole[ModelRoleName].Temperature,
+            TopP:            DefaultConfigByRole[ModelRoleName].TopP,
+        },
+        CommitMsg: ModelRoleConfig{
+            Role:            ModelRoleCommitMsg,
+            BaseModelConfig: AvailableModelsByName["anthropic/claude-3-haiku"].BaseModelConfig,
+            Temperature:     DefaultConfigByRole[ModelRoleCommitMsg].Temperature,
+            TopP:            DefaultConfigByRole[ModelRoleCommitMsg].TopP,
+        },
+        ExecStatus: ModelRoleConfig{
+            Role:            ModelRoleExecStatus,
+            BaseModelConfig: AvailableModelsByName["anthropic/claude-3-haiku"].BaseModelConfig,
+            Temperature:     DefaultConfigByRole[ModelRoleExecStatus].Temperature,
+            TopP:            DefaultConfigByRole[ModelRoleExecStatus].TopP,
+        },
+    }
+
     BuiltInModelPacks = []*ModelPack{
         &Gpt4oLatestModelPack,
         &Gpt4TurboLatestModelPack,
         &OpenRouterClaude3Dot5SonnetModelPack,
-        &OpenRouterClaude3Dot5SonnetGPT4TurboModelPack,
+        &OpenRouterClaude3Dot5SonnetGPT4oModelPack,
         &TogetherMixtral8x22BModelPack,
         &GeminiGpt4oMiniModelPack,
+		&GeminiModelPack,
         &Gpt4oMiniModelPack,
+		&Claude3HaikuModelPack,
     }
     DefaultModelPack = BuiltInModelPacks[0]
 }
