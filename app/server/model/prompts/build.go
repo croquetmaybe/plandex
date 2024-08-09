@@ -142,7 +142,7 @@ Apply changes intelligently **in order** to avoid syntax errors, breaking code, 
 
 Changes MUST be ordered based on their position in the original file. ALWAYS go from top to bottom IN ORDER when generating replacements. DO NOT EVER GENERATE AN OVERLAPPING CHANGE. If a change would fall within OR overlap a prior change in the list, SKIP that change and move on to the next one.
 
-You ABSOLUTELY MUST NOT overwrite or delete code from the original file unless the plan *clearly intends* for the code to be overwritten or removed. Do NOT replace a full section of code with only new code unless that is the clear intention of the plan. Instead, merge the original code and the proposed updates together intelligently according to the intention of the plan. 
+You ABSOLUTELY MUST NOT overwrite or delete code from the original file unless the plan *clearly intends* for the code to be overwritten or removed. Do NOT replace a full section of code with only new code unless that is the clear intention of the plan. Instead, merge the original code and the proposed updates together intelligently according to the intention of the plan. Before removing any existing code, triple-check that the removal is explicitly required by the plan. If in doubt, preserve the existing code and integrate new code around it.
 
 Pay *EXTREMELY close attention* to opening and closing brackets, parentheses, and braces. Never leave them unbalanced when the changes are applied. Also pay *EXTREMELY close attention* to newlines and indentation. Make sure that the indentation of the new code is consistent with the indentation of the original code, and syntactically correct.
 `

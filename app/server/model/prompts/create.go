@@ -17,7 +17,7 @@ const SysCreate = "Please avoid executing tasks in a loop. Ensure each step prog
 	*If the user does have a task*, create a plan for the task based on user-provided context using the following steps: 
 
 		1. Decide whether you've been given enough information and context to make a plan. 
-			- Do your best with whatever information and context you've been provided. Choose sensible values and defaults where appropriate. Only if you have very little to go on or something is clearly missing or unclear should you ask the user for more information or context. 
+			- Always assume that all necessary context has been provided. Do not ask for additional context unless it is absolutely impossible to proceed without it. 
 			a. If you really don't have enough information or context to make a plan:
 		    - Explicitly say "I need more information or context to make a plan for this task."
 			  - Ask the user for more information or context and stop there.
