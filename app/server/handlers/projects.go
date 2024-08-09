@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"log"
 	"net/http"
 	"plandex-server/db"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/plandex/plandex/shared"
@@ -132,53 +134,71 @@ func ListProjectsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ProjectSetPlanHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("Received request for UpdateProjectSetPlanHandler")
-	auth := authenticate(w, r, true)
-	if auth == nil {
-		return
-	}
+    log.Println("Received request for UpdateProjectSetPlanHandler")
+    auth := authenticate(w, r, true)
+    if auth == nil {
+        return
+    }
 
-	vars := mux.Vars(r)
-	projectId := vars["projectId"]
+    vars := mux.Vars(r)
+    projectId := vars["projectId"]
 
-	log.Println("projectId: ", projectId)
+    log.Println("projectId: ", projectId)
 
-	if !authorizeProject(w, projectId, auth) {
-		return
-	}
+    if !authorizeProject(w, projectId, auth) {
+        return
+    }
 
-	// read the request body
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error reading request body: %v\n", err)
-		http.Error(w, "Error reading request body", http.StatusInternalServerError)
-		return
-	}
-	defer r.Body.Close()
+    // read the request body
+    body, err := io.ReadAll(r.Body)
+    if err != nil {
+        log.Printf("Error reading request body: %v\n", err)
+        http.Error(w, "Error reading request body", http.StatusInternalServerError)
+        return
+    }
+    defer r.Body.Close()
 
-	var requestBody shared.SetProjectPlanRequest
-	if err := json.Unmarshal(body, &requestBody); err != nil {
-		log.Printf("Error parsing request body: %v\n", err)
-		http.Error(w, "Error parsing request body", http.StatusBadRequest)
-		return
-	}
+    var requestBody shared.SetProjectPlanRequest
+    if err := json.Unmarshal(body, &requestBody); err != nil {
+        log.Printf("Error parsing request body: %v\n", err)
+        http.Error(w, "Error parsing request body", http.StatusBadRequest)
+        return
+    }
 
-	if requestBody.PlanId == "" {
-		log.Println("Received empty planId field")
-		http.Error(w, "planId field is required", http.StatusBadRequest)
-		return
-	}
+    if requestBody.PlanId == "" {
+        log.Println("Received empty planId field")
+        http.Error(w, "planId field is required", http.StatusBadRequest)
+        return
+    }
 
-	// update statement here -- need auth / current user id
+    // Add context with timeout
+    ctx, cancel := context.WithTimeout(r.Context(), 25*time.Second)
+    defer cancel()
 
-	if err != nil {
-		log.Printf("Error updating project: %v\n", err)
-		http.Error(w, "Error updating project: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+    // update statement here -- need auth / current user id
+    res, err := db.Conn.ExecContext(ctx, "UPDATE projects SET plan_id = $1 WHERE id = $2", requestBody.PlanId, projectId)
+    if err != nil {
+        log.Printf("Error updating project: %v\n", err)
+        http.Error(w, "Error updating project: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
 
-	log.Println("Successfully set project plan", projectId)
+    rowsAffected, err := res.RowsAffected()
+    if err != nil {
+        log.Printf("Error getting rows affected: %v\n", err)
+        http.Error(w, "Error getting rows affected: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    if rowsAffected == 0 {
+        log.Printf("Project not found: %v\n", projectId)
+        http.Error(w, "Project not found: "+projectId, http.StatusNotFound)
+        return
+    }
+
+    log.Println("Successfully set project plan", projectId)
 }
+
 
 func RenameProjectHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Received request for RenameProjectHandler")

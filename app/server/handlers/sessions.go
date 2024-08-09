@@ -95,133 +95,129 @@ func CreateEmailVerificationHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(bytes)
 }
 
+
 func SignInHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("Received request for SignInHandler")
+    log.Println("Received request for SignInHandler")
 
-	// read the request body
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error reading request body: %v\n", err)
-		http.Error(w, "Error reading request body: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+    // read the request body
+    body, err := io.ReadAll(r.Body)
+    if err != nil {
+        log.Printf("Error reading request body: %v\n", err)
+        http.Error(w, "Error reading request body: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
 
-	var req shared.SignInRequest
-	err = json.Unmarshal(body, &req)
-	if err != nil {
-		log.Printf("Error unmarshalling request: %v\n", err)
-		http.Error(w, "Error unmarshalling request: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-	req.Email = strings.ToLower(req.Email)
+    var req shared.SignInRequest
+    err = json.Unmarshal(body, &req)
+    if err != nil {
+        log.Printf("Error unmarshalling request: %v\n", err)
+        http.Error(w, "Error unmarshalling request: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
 
-	user, err := db.GetUserByEmail(req.Email)
+    req.Email = strings.ToLower(req.Email)
 
-	if err != nil {
-		log.Printf("Error getting user: %v\n", err)
-		http.Error(w, "Error getting user: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+    user, err := db.GetUserByEmail(req.Email)
+    if err != nil {
+        log.Printf("Error getting user: %v\n", err)
+        http.Error(w, "Error getting user: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
 
-	if user == nil {
-		log.Printf("User not found for email: %v\n", req.Email)
-		http.Error(w, "Not found", http.StatusNotFound)
-		return
-	}
+    if user == nil {
+        log.Printf("User not found for email: %v\n", req.Email)
+        http.Error(w, "Not found", http.StatusNotFound)
+        return
+    }
 
-	if user != nil && user.IsTrial {
-		log.Printf("Trial user can't sign in: %v\n", req.Email)
-		http.Error(w, "Trial user can't sign in", http.StatusForbidden)
-		return
-	}
+    if user.IsTrial {
+        log.Printf("Trial user can't sign in: %v\n", req.Email)
+        http.Error(w, "Trial user can't sign in", http.StatusForbidden)
+        return
+    }
 
-	emailVerificationId, err := db.ValidateEmailVerification(req.Email, req.Pin)
+    emailVerificationId, err := db.ValidateEmailVerification(req.Email, req.Pin)
+    if err != nil {
+        log.Printf("Error validating email verification: %v\n", err)
+        http.Error(w, "Error validating email verification: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
 
-	if err != nil {
-		log.Printf("Error validating email verification: %v\n", err)
-		http.Error(w, "Error validating email verification: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+    // start a transaction
+    tx, err := db.Conn.Beginx()
+    if err != nil {
+        log.Printf("Error starting transaction: %v\n", err)
+        http.Error(w, "Error starting transaction: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
 
-	// start a transaction
-	tx, err := db.Conn.Beginx()
-	if err != nil {
-		log.Printf("Error starting transaction: %v\n", err)
-		http.Error(w, "Error starting transaction: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+    // Ensure that rollback is attempted in case of failure
+    defer func() {
+        if err != nil {
+            if rbErr := tx.Rollback(); rbErr != nil {
+                log.Printf("transaction rollback error: %v\n", rbErr)
+            } else {
+                log.Println("transaction rolled back")
+            }
+        }
+    }()
 
-	// Ensure that rollback is attempted in case of failure
-	defer func() {
-		if err != nil {
-			if rbErr := tx.Rollback(); rbErr != nil {
-				log.Printf("transaction rollback error: %v\n", rbErr)
-			} else {
-				log.Println("transaction rolled back")
-			}
-		}
-	}()
+    // create auth token
+    token, authTokenId, err := db.CreateAuthToken(user.Id, false, tx)
+    if err != nil {
+        log.Printf("Error creating auth token: %v\n", err)
+        http.Error(w, "Error creating auth token: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
 
-	// create auth token
-	token, authTokenId, err := db.CreateAuthToken(user.Id, false, tx)
+    // update email verification with user and auth token ids
+    _, err = tx.Exec("UPDATE email_verifications SET user_id = $1, auth_token_id = $2 WHERE id = $3", user.Id, authTokenId, emailVerificationId)
+    if err != nil {
+        log.Printf("Error updating email verification: %v\n", err)
+        http.Error(w, "Error updating email verification: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
 
-	if err != nil {
-		log.Printf("Error creating auth token: %v\n", err)
-		http.Error(w, "Error creating auth token: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+    // commit transaction
+    err = tx.Commit()
+    if err != nil {
+        log.Printf("Error committing transaction: %v\n", err)
+        http.Error(w, "Error committing transaction: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
 
-	// update email verification with user and auth token ids
-	_, err = tx.Exec("UPDATE email_verifications SET user_id = $1, auth_token_id = $2 WHERE id = $3", user.Id, authTokenId, emailVerificationId)
+    // get orgs
+    orgs, err := db.GetAccessibleOrgsForUser(user)
+    if err != nil {
+        log.Printf("Error getting orgs for user: %v\n", err)
+        http.Error(w, "Error getting orgs for user: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
 
-	if err != nil {
-		log.Printf("Error updating email verification: %v\n", err)
-		http.Error(w, "Error updating email verification: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+    var apiOrgs []*shared.Org
+    for _, org := range orgs {
+        apiOrgs = append(apiOrgs, org.ToApi())
+    }
 
-	// commit transaction
-	err = tx.Commit()
-	if err != nil {
-		log.Printf("Error committing transaction: %v\n", err)
-		http.Error(w, "Error committing transaction: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+    resp := shared.SessionResponse{
+        UserId:   user.Id,
+        Token:    token,
+        Email:    user.Email,
+        UserName: user.Name,
+        Orgs:     apiOrgs,
+    }
 
-	// get orgs
-	orgs, err := db.GetAccessibleOrgsForUser(user)
+    bytes, err := json.Marshal(resp)
+    if err != nil {
+        log.Printf("Error marshalling response: %v\n", err)
+        http.Error(w, "Error marshalling response: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
 
-	if err != nil {
-		log.Printf("Error getting orgs for user: %v\n", err)
-		http.Error(w, "Error getting orgs for user: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	var apiOrgs []*shared.Org
-	for _, org := range orgs {
-		apiOrgs = append(apiOrgs, org.ToApi())
-	}
-
-	resp := shared.SessionResponse{
-		UserId:   user.Id,
-		Token:    token,
-		Email:    user.Email,
-		UserName: user.Name,
-		Orgs:     apiOrgs,
-	}
-
-	bytes, err := json.Marshal(resp)
-
-	if err != nil {
-		log.Printf("Error marshalling response: %v\n", err)
-		http.Error(w, "Error marshalling response: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	log.Println("Successfully signed in")
-
-	w.Write(bytes)
+    log.Println("Successfully signed in")
+    w.Write(bytes)
 }
+
 
 func SignOutHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Received request for SignOutHandler")

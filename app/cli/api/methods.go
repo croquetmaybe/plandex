@@ -882,7 +882,34 @@ func (a *Api) RejectFiles(planId, branch string, paths []string) *shared.ApiErro
 	return nil
 }
 
+// List of common image file extensions
+var imageExtensions = []string{".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".svg"}
+
+// Function to check if a file is an image
+func isImageFile(fileName string) bool {
+    for _, ext := range imageExtensions {
+        if strings.HasSuffix(strings.ToLower(fileName), ext) {
+            return true
+        }
+    }
+    return false
+}
+
+// Function to filter out image files from the LoadContextRequest
+func filterImageFiles(req *shared.LoadContextRequest) {
+    filteredParams := make([]*shared.LoadContextParams, 0)
+    for _, params := range *req {
+        if params.FilePath == "" || !isImageFile(params.FilePath) {
+            filteredParams = append(filteredParams, params)
+        }
+    }
+    *req = filteredParams
+}
+
 func (a *Api) LoadContext(planId, branch string, req shared.LoadContextRequest) (*shared.LoadContextResponse, *shared.ApiError) {
+	    // Filter out image files from the request
+    filterImageFiles(&req)
+
 	serverUrl := fmt.Sprintf("%s/plans/%s/%s/context", getApiHost(), planId, branch)
 	reqBytes, err := json.Marshal(req)
 	if err != nil {
